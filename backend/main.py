@@ -63,6 +63,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     log.info("Starting {name} v{version}", name=settings.app_name, version=settings.app_version)
     log.info("Environment: {env}", env=settings.app_env)
 
+    # Copy pre-packaged metadata to writable directory if running on Render (where workspace is read-only)
+    try:
+        import shutil
+        from pathlib import Path
+        src_metadata = Path("/opt/render/project/src/metadata")
+        dest_metadata = Path(settings.metadata_path).resolve()
+        if src_metadata.exists() and dest_metadata != src_metadata:
+            log.info("Copying pre-packaged metadata to writable directory | src={src} | dest={dest}", src=src_metadata, dest=dest_metadata)
+            dest_metadata.mkdir(parents=True, exist_ok=True)
+            for item in src_metadata.iterdir():
+                dest_item = dest_metadata / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest_item, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dest_item)
+            log.info("Pre-packaged metadata copy completed successfully.")
+    except Exception as exc:
+        log.error("Failed to copy pre-packaged metadata | error={error}", error=str(exc))
+
     # 1. Pre-load BGE embedding model
     try:
         from app.embeddings.embedder import BGEEmbedder

@@ -72,6 +72,13 @@ class CollectionManager:
                 name=collection_name,
             )
         except Exception as exc:
+            exc_str = str(exc).lower()
+            if "already exists" in exc_str or "409" in exc_str:
+                vector_log.info(
+                    "Qdrant collection already exists (ignored conflict during creation) | collection={name}",
+                    name=collection_name,
+                )
+                return
             vector_log.error(
                 "Failed to create Qdrant collection | collection={name} | error={error}",
                 name=collection_name,

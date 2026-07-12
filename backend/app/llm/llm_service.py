@@ -125,14 +125,13 @@ class LLMService:
                 else:
                     max_hybrid_score = max(hybrid_scores)
 
-        # Apply Domain Constraint Check
-        if not retrieved_chunks or max_vector_score < self.settings.min_vector_score:
+        # Apply Domain Constraint Check — only reject if NO chunks were retrieved at all.
+        # Note: vector score threshold removed because changing embedding models changes the score
+        # scale; using a fixed threshold would cause false rejections.
+        if not retrieved_chunks:
             llm_log.warning(
-                "Query rejected (Out of Domain) | query={q} | max_vector_score={m_v:.4f} (min={min_v:.4f}) | docs={docs}",
+                "Query rejected (Out of Domain — no chunks retrieved) | query={q}",
                 q=clean_query[:80],
-                m_v=max_vector_score,
-                min_v=self.settings.min_vector_score,
-                docs=len(retrieved_chunks)
             )
             return LLMResult(
                 answer="This assistant is designed only for US Tax & Legal documents. The requested information is outside the supported domain.",

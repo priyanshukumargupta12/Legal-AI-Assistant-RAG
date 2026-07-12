@@ -1,0 +1,21 @@
+{
+  "total_documents": 100,
+  "valid_documents": 96,
+  "invalid_documents": 0,
+  "empty_documents": 0,
+  "duplicate_documents": 4,
+  "categories": {
+    "Acts": 20,
+    "CourtJudgement": 25,
+    "Tax": 40,
+    "Legal_opinion": 15
+  },
+  "avg_pages": 141.81,
+  "avg_file_size_mb": 1.545,
+  "total_size_mb": 154.522,
+  "valid_percentage": 96.0,
+  "largest_pdf": "Title26_Vol9.pdf",
+  "smallest_pdf": "IRS_Publication_555.pdf",
+  "dataset_root": "D:\\Legal-AI-Assistant-RAG\\dataset",
+  "scanned_at": "2026-07-12T15:13:30.063096+00:00Z"
+}

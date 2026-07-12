@@ -1,0 +1,53 @@
+{
+  "total_queries": 179,
+  "valid_queries": 179,
+  "invalid_queries": 0,
+  "duplicate_queries": 0,
+  "rejected_queries": 0,
+  "valid_percentage": 100.0,
+  "category_distribution": {
+    "Acts": 48,
+    "CourtJudgement": 51,
+    "Tax": 48,
+    "Legal_opinion": 32
+  },
+  "category_stats": [
+    {
+      "category": "Acts",
+      "total": 48,
+      "valid": 48,
+      "invalid": 0,
+      "duplicate": 0,
+      "avg_query_len": 74.2
+    },
+    {
+      "category": "CourtJudgement",
+      "total": 51,
+      "valid": 51,
+      "invalid": 0,
+      "duplicate": 0,
+      "avg_query_len": 76.3
+    },
+    {
+      "category": "Legal_opinion",
+      "total": 32,
+      "valid": 32,
+      "invalid": 0,
+      "duplicate": 0,
+      "avg_query_len": 73.9
+    },
+    {
+      "category": "Tax",
+      "total": 48,
+      "valid": 48,
+      "invalid": 0,
+      "duplicate": 0,
+      "avg_query_len": 73.6
+    }
+  ],
+  "avg_query_length": 74.6,
+  "avg_answer_length": 171.5,
+  "unique_source_docs": 86,
+  "source_file": "golden_set.csv",
+  "computed_at": "2026-07-12T15:36:49.051684+00:00Z"
+}

@@ -1,0 +1,12 @@
+{
+  "total_rows": 179,
+  "valid_count": 179,
+  "invalid_count": 0,
+  "duplicate_count": 0,
+  "rejected_count": 0,
+  "error_count": 0,
+  "success_rate": 100.0,
+  "source_file": "golden_set.csv",
+  "validated_at": "2026-07-12T15:36:48.834702+00:00Z",
+  "errors": []
+}

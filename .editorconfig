@@ -1,0 +1,57 @@
+# EditorConfig — https://editorconfig.org
+# Ensures consistent coding style across all editors and IDEs.
+# Applied to both Python (PEP 8) and TypeScript/React files.
+
+root = true
+
+# ─── Global Defaults ──────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# ─── Python (PEP 8: 4-space indent, 79-char line limit) ───────
+[*.py]
+indent_size = 4
+max_line_length = 88
+indent_style = space
+
+# ─── TypeScript / TSX / JavaScript ────────────────────────────
+[*.{ts,tsx,js,jsx}]
+indent_size = 2
+indent_style = space
+
+# ─── JSON (package.json, tsconfig, etc.) ──────────────────────
+[*.json]
+indent_size = 2
+indent_style = space
+
+# ─── YAML / TOML ──────────────────────────────────────────────
+[*.{yaml,yml,toml}]
+indent_size = 2
+indent_style = space
+
+# ─── Markdown ─────────────────────────────────────────────────
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2
+
+# ─── CSS / SCSS ───────────────────────────────────────────────
+[*.{css,scss}]
+indent_size = 2
+
+# ─── HTML ─────────────────────────────────────────────────────
+[*.html]
+indent_size = 2
+
+# ─── Shell Scripts ────────────────────────────────────────────
+[*.{sh,bat,ps1}]
+indent_size = 2
+end_of_line = crlf
+
+# ─── .env Files ───────────────────────────────────────────────
+[*.env*]
+insert_final_newline = false

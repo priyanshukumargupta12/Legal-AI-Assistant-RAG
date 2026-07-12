@@ -70,8 +70,9 @@ const ViewerPage: React.FC = () => {
     );
   }
 
-  // Construct static file URL served by Vite/Vercel public folder
-  const fileUrl = `/dataset/${category}/${docName}`;
+  // Construct PDF URL from backend API (PDFs live on the Render server, not Vercel static files)
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+  const fileUrl = `${apiBase}/dataset/pdf?category=${encodeURIComponent(category)}&document=${encodeURIComponent(docName)}`;
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";

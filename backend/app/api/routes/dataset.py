@@ -9,13 +9,41 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Annotated
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from app.api.dependencies.services import get_dataset_service, get_settings
 from app.api.responses.standard_response import StandardResponse
 from app.dataset.dataset_service import DatasetService
 from app.core.config import Settings
 
 router = APIRouter(prefix="/dataset", tags=["Dataset Management"])
+
+
+@router.get(
+    "/pdf",
+    summary="Stream a PDF file from the dataset folder",
+)
+def get_pdf_file(
+    category: str,
+    document: str,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> FileResponse:
+    """Streams a PDF by category and filename from the server's dataset folder."""
+    safe_category = Path(category).name
+    safe_document = Path(document).name
+    pdf_path = Path(settings.dataset_root_path) / safe_category / safe_document
+    if not pdf_path.exists() or pdf_path.suffix.lower() != ".pdf":
+        raise HTTPException(
+            status_code=404,
+            detail=f"PDF not found: {safe_category}/{safe_document}",
+        )
+    return FileResponse(
+        path=str(pdf_path),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{safe_document}"'},
+    )
+
+
 
 
 @router.get(

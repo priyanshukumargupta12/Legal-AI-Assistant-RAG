@@ -59,19 +59,22 @@ class ConversationHistoryMemory:
             self._history_records.pop(0)
 
     def get_history_string(self) -> str:
-        """Returns the history formatted as a single string for prompt inclusion."""
+        """Returns only the previous QUESTIONS formatted for prompt inclusion.
+        
+        Previous AI answers are intentionally excluded to prevent answer memory
+        leakage — Gemini must always ground its response in the current retrieved
+        document chunks, never in a prior AI-generated answer.
+        """
         messages = self._history.messages
         if not messages:
             return "No prior exchanges."
 
         formatted_lines = []
-        # Group human/AI messages by turn
+        # Only emit human (question) turns — skip AI answer turns entirely
         for i in range(0, len(messages), 2):
-            if i + 1 < len(messages):
-                h_msg = messages[i].content
-                ai_msg = messages[i+1].content
-                formatted_lines.append(f"Human: {h_msg}\nAssistant: {ai_msg}")
-        return "\n\n".join(formatted_lines)
+            h_msg = messages[i].content
+            formatted_lines.append(f"Previous question: {h_msg}")
+        return "\n".join(formatted_lines)
 
     def get_messages(self) -> List[ChatMessage]:
         """Returns the list of ChatMessage domain objects."""

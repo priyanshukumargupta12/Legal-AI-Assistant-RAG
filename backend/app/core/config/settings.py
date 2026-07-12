@@ -192,7 +192,7 @@ class Settings(BaseSettings):
         description="Enable/disable CrossEncoder re-ranking stage after hybrid retrieval",
     )
     min_vector_score: float = Field(
-        default=0.35,
+        default=0.0,
         ge=0.0,
         le=1.0,
         description="Minimum vector similarity score to determine if a query is within domain",

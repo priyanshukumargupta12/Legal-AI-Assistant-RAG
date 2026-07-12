@@ -198,7 +198,8 @@ def detect_legal_patterns(text: str) -> List[Tuple[str, EdgeType, float]]:
         for match in pattern.finditer(text):
             matched = match.group(0).strip()
             # Deduplicate by normalizing whitespace
-            key = f"{edge_type.value}::{re.sub(r'\\s+', ' ', matched).lower()}"
+            normalized_matched = re.sub(r'\s+', ' ', matched).lower()
+            key = f"{edge_type.value}::{normalized_matched}"
             if key not in seen and len(matched) >= 3:
                 seen.add(key)
                 results.append((matched, edge_type, confidence))

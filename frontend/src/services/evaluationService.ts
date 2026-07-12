@@ -29,6 +29,14 @@ export interface EvaluationReportPayload {
   avg_response_time_ms: number;
   evaluated_at: string;
   results: EvaluationResultEntry[];
+  avg_precision_at_5?: number;
+  avg_recall_at_5?: number;
+  avg_mrr?: number;
+  avg_ndcg?: number;
+  avg_context_precision?: number;
+  avg_context_recall?: number;
+  avg_answer_relevancy?: number;
+  avg_citation_accuracy?: number;
 }
 
 const API_BASE = (import.meta as any).env.VITE_API_BASE_URL ?? '/api/v1';

@@ -29,7 +29,6 @@ import {
   Chip,
   CircularProgress,
   Collapse,
-  Divider,
   Grid,
   IconButton,
   LinearProgress,
@@ -79,7 +78,6 @@ import type {
   CategoryStats,
   FieldValidationError,
   GoldenRecord,
-  GoldenSetStatistics,
   ImportResult,
   ValidationReport,
 } from "../types/goldenSet";
@@ -158,7 +156,6 @@ interface DropzoneProps {
 }
 
 const UploadDropzone: React.FC<DropzoneProps> = ({ onFile, disabled }) => {
-  const theme = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -859,7 +856,7 @@ const GoldenSetPage: React.FC = () => {
                       <XAxis type="number" fontSize={11} />
                       <YAxis type="category" dataKey="name" width={130} fontSize={11} fontWeight={600} />
                       <ChartTooltip
-                        formatter={(value: number) => [value, "Records"]}
+                        formatter={(value: any) => [value, "Records"]}
                         contentStyle={{
                           background: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,

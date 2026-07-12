@@ -14,7 +14,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Divider,
   FormControl,
   Grid,
   InputLabel,
@@ -50,11 +49,10 @@ import {
   CheckCircle as PassedIcon,
   Cancel as FailedIcon,
   Percent as PercentIcon,
-  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
-import { evaluationService, EvaluationReportPayload, EvaluationResultEntry } from "../services/evaluationService";
+import { evaluationService } from "../services/evaluationService";
 
 // Status Chip Colors
 const STATUS_COLORS: Record<string, "success" | "warning" | "error" | "default"> = {
@@ -153,7 +151,6 @@ const EvaluationPage: React.FC = () => {
 
   const results = latestReport?.results || [];
   const totalResults = results.length;
-  const totalPages = Math.ceil(totalResults / pageSize);
   
   // Paginate table rows
   const paginatedResults = results.slice((page - 1) * pageSize, page * pageSize);

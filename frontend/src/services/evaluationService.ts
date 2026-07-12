@@ -29,6 +29,7 @@ export interface EvaluationReportPayload {
   avg_response_time_ms: number;
   evaluated_at: string;
   results: EvaluationResultEntry[];
+  partial_queries?: number;
   avg_precision_at_5?: number;
   avg_recall_at_5?: number;
   avg_mrr?: number;

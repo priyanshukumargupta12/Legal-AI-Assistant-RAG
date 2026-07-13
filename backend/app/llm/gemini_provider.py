@@ -97,27 +97,16 @@ class GeminiProvider(LLMProvider):
         if not citations:
             citations = [{"document": "IRS_Publication_504.pdf", "page": 1, "category": "Tax"}]
 
-        # 3. Dynamically synthesize the answer text from the retrieved chunks
-        # instead of hardcoding responses, which causes apparent hallucinations.
-        combined_text = ""
-        for chunk in chunks[:2]:
-            txt = chunk["text"]
-            if txt:
-                # Take the first sentence
-                first_sent = re.split(r"(?<=[.!?])\s+", txt)[0].strip()
-                if len(first_sent) > 20:
-                    combined_text += first_sent + " "
-
-            
-            if combined_text:
-                answer = combined_text.strip()
-            else:
-                answer = (
-                    "Based on the retrieved legal references, the statutory rules and regulatory provisions detail specific "
-                    "compliance standards and administrative requirements for this query. Please check the cited documents "
-                    "below to inspect the source text."
-                )
-            summary = "Grounded guidelines are detailed in the retrieved references."
+        # 3. If we reach this point, both the primary and fallback LLMs hit rate limits.
+        # Return a clear, professional error message so the user knows exactly what is happening,
+        # rather than trying to synthesize a broken sentence fragment.
+        answer = (
+            "⚠️ **API Rate Limit Exceeded**\n\n"
+            "The system is currently experiencing high traffic and has temporarily exceeded its LLM quota. "
+            "Please wait a moment and try your query again.\n\n"
+            "*(System Note: The retrieved legal documents contain the relevant context, but the AI generation step was rate-limited.)*"
+        )
+        summary = "Query failed: API Rate Limit Exceeded. Please try again shortly."
 
         return json.dumps({
             "answer": answer,
@@ -193,11 +182,26 @@ class GeminiProvider(LLMProvider):
             err_str = str(exc)
             llm_log.error("Gemini invocation failed | error={err}", err=err_str)
 
-            # Graceful degradation for quota exhaustion — return user-friendly response
-            # instead of raising LLMError (which would cause 503 Service Unavailable)
             if "RESOURCE_EXHAUSTED" in err_str or "429" in err_str:
-                llm_log.warning("Gemini quota exhausted — returning graceful fallback | model={m}", m=self.model_name)
-                return self._quota_exhausted_response(prompt)
+                llm_log.warning("Gemini quota exhausted for {m}. Attempting fallback to gemini-1.5-flash...", m=self.model_name)
+                try:
+                    # Attempt fallback to older model which has a separate rate limit bucket
+                    client = self._build_client()
+                    loop = asyncio.get_event_loop()
+                    response = await loop.run_in_executor(
+                        None,
+                        lambda: client.models.generate_content(
+                            model="gemini-1.5-flash",
+                            contents=prompt,
+                        )
+                    )
+                    raw_text = response.text.strip()
+                    llm_log.info("Fallback Gemini response generated | response_len={rlen}", rlen=len(raw_text))
+                    return raw_text
+                except Exception as fallback_exc:
+                    llm_log.error("Fallback Gemini invocation also failed | error={err}", err=str(fallback_exc))
+                    # If fallback also fails, return the graceful quota response
+                    return self._quota_exhausted_response(prompt)
 
             # For all other errors raise LLMError
             raise LLMError(

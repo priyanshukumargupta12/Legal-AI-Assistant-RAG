@@ -51,13 +51,16 @@ class PromptBuilder:
         cls,
         query: str,
         chunks: List[FusionCandidate] | List[RetrievedChunk],
-        chat_history: str = "No prior exchanges.",
+        chat_history: str = "",  # Kept for signature compatibility but intentionally unused
     ) -> str:
-        """Constructs the full system instructions + user input QA prompt."""
+        """Constructs the full system instructions + user input QA prompt.
+        
+        Note: chat_history is intentionally NOT injected into the prompt to prevent
+        Gemini from using parametric memory or prior answers as a source of facts.
+        """
         context_text = cls.build_context_text(chunks)
         user_prompt = QA_PROMPT_TEMPLATE.format(
             context_text=context_text,
-            chat_history=chat_history,
             query=query,
         )
         return f"{SYSTEM_PROMPT}\n\n{user_prompt}"

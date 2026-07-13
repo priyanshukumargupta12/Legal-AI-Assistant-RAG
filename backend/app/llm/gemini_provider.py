@@ -111,7 +111,7 @@ class GeminiProvider(LLMProvider):
         return json.dumps({
             "answer": answer,
             "summary": summary,
-            "citations": citations
+            "citations": []
         })
 
     async def generate(self, prompt: str) -> str:

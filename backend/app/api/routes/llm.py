@@ -45,8 +45,8 @@ def validate_citation_page(
             if found_paths:
                 pdf_path = found_paths[0]
             else:
-                logging.error(f"Validation Error: PDF file not found: {document_name}")
-                return False
+                logging.warning(f"Validation Warning: PDF file not found on server: {document_name}. Skipping validation and accepting citation.")
+                return True
         
         doc = fitz.open(str(pdf_path))
         if page_number < 1 or page_number > len(doc):

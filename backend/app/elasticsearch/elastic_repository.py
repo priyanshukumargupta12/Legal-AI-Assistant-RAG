@@ -382,13 +382,16 @@ class ElasticsearchRepository(KeywordRepository):
         results: List[RetrievedChunk] = []
         for rank, hit in enumerate(hits, start=1):
             src = hit["_source"]
+            page_num = src.get("page_number") or src.get("page") or src.get("metadata", {}).get("page_number")
+            if page_num is None:
+                raise ValueError(f"page_number is missing in Elasticsearch source for chunk {src.get('chunk_id')}")
             results.append(
                 RetrievedChunk(
                     chunk_id=src.get("chunk_id", hit["_id"]),
                     document_id=src.get("document_id", ""),
                     document_name=src.get("document_name", ""),
                     category=src.get("category", ""),
-                    page_number=src.get("page_number", 0),
+                    page_number=int(page_num),
                     chunk_index=src.get("chunk_index", 0),
                     text=src.get("chunk_text", ""),
                     score=float(hit["_score"]),

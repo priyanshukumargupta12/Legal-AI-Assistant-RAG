@@ -26,6 +26,58 @@ from app.retrieval.retrieval_service import HybridRetrievalService
 from app.llm.base_provider import LLMProvider
 from app.llm.prompt_templates.summary_prompt import SUMMARY_PROMPT_TEMPLATE
 
+import logging
+import fitz
+
+def validate_citation_page(
+    document_name: str,
+    category: str,
+    page_number: int,
+    chunk_text: str,
+    settings: Settings
+) -> bool:
+    try:
+        # Construct PDF path
+        pdf_path = Path(settings.dataset_root_path) / category / document_name
+        if not pdf_path.exists():
+            # Fallback search under dataset_root_path
+            found_paths = list(Path(settings.dataset_root_path).rglob(document_name))
+            if found_paths:
+                pdf_path = found_paths[0]
+            else:
+                logging.error(f"Validation Error: PDF file not found: {document_name}")
+                return False
+        
+        doc = fitz.open(str(pdf_path))
+        if page_number < 1 or page_number > len(doc):
+            logging.error(f"Validation Error: Page number {page_number} is out of bounds for {document_name} (total pages: {len(doc)})")
+            doc.close()
+            return False
+            
+        page = doc[page_number - 1]
+        page_text = page.get_text()
+        doc.close()
+        
+        # Clean text helper
+        def clean(t: str) -> str:
+            return "".join(c.lower() for c in t if c.isalnum())
+            
+        clean_page_text = clean(page_text)
+        clean_chunk_text = clean(chunk_text[:150])
+        
+        if clean_chunk_text not in clean_page_text:
+            logging.error(
+                f"Validation Error: Text mismatch on {document_name} Page {page_number}. "
+                f"Chunk text prefix not found in PDF page text."
+            )
+            return False
+            
+        return True
+    except Exception as e:
+        logging.error(f"Validation Error: Exception validating {document_name} Page {page_number}: {e}")
+        return False
+
+
 router = APIRouter(tags=["LLM Assistant"])
 
 
@@ -52,15 +104,18 @@ async def ask_question(
     request: QueryRequest,
     retrieval_service: Annotated[HybridRetrievalService, Depends(get_retrieval_service)],
     llm_service: Annotated[LLMService, Depends(get_llm_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> StandardResponse:
     """
     Executes a complete RAG sequence: Search -> Context Retrieval -> LLM Generation.
     """
-    # 1. Retrieve top 5 chunks
+    # 1. Retrieve top-K chunks — use a higher final_top_k so we get multiple
+    # candidates per document, increasing the chance of finding substantive
+    # (non-cover-page) content alongside any page-1 TOC hits.
     retrieval_result = await retrieval_service.retrieve(
         raw_query=request.query,
-        top_k=10,
-        final_top_k=5,
+        top_k=15,
+        final_top_k=10,
         category_filter=request.category_filter,
     )
 
@@ -70,33 +125,27 @@ async def ask_question(
         retrieved_chunks=retrieval_result.results,
     )
 
-    import re
-
-    # 1. Parse and clean chunks (extract actual page number from text like [*8] or [*102])
+    # 1. Build cleaned_chunks from retrieved results, trusting chunk metadata page numbers directly.
+    # IMPORTANT: Do NOT use regex to override metadata page numbers — the chunk metadata
+    # page_number is authoritative (set by the PDF parser during indexing).
     cleaned_chunks = []
     seen_keys = set()
-    
+
     for c in retrieval_result.results:
         doc_name = getattr(c, "document_name", getattr(c, "document", ""))
         text = getattr(c, "text", getattr(c, "chunk_text", ""))
-        
-        # Fallback to metadata page number
-        page = int(getattr(c, "page_number", getattr(c, "page", 1)))
-        
-        # Match printed page indicators in text: [*8] or [*102]
-        page_marker_match = re.search(r"\[\*(\d+)\]", text)
-        if page_marker_match:
-            page = int(page_marker_match.group(1))
 
+        # Trust the chunk metadata page number — this is set by the PDF parser during indexing
+        page = int(getattr(c, "page_number", getattr(c, "page", 1)))
         # Enforce page >= 1
         page = max(1, page)
-        
-        # Deduplication key
+
+        # Deduplication: keep only the first (highest-ranked) chunk per document+page combination
         dup_key = (doc_name.lower(), page)
         if dup_key in seen_keys:
             continue
         seen_keys.add(dup_key)
-        
+
         cleaned_chunks.append({
             "c_obj": c,
             "doc_name": doc_name,
@@ -104,25 +153,88 @@ async def ask_question(
             "text": text
         })
 
-    # Limit to top 5 unique chunks
-    cleaned_chunks = cleaned_chunks[:5]
+    # Keep all unique chunks (up to 10) for the transparent context block.
+    # For SOURCE CITATIONS we'll build a smarter per-document selection below.
+    all_retrieved_chunks = cleaned_chunks[:10]
+
+    # Build the best-page selection per document for source citations:
+    # For each unique document, prefer the highest-ranked chunk that is NOT
+    # a cover/TOC page (page 1 of most IRS PDFs is just a title page with no
+    # legal content). If no substantive page exists, fall back to page 1.
+    doc_best: dict = {}  # doc_name_lower → best cleaned_chunk
+    for cc in all_retrieved_chunks:
+        key = cc["doc_name"].lower()
+        if key not in doc_best:
+            doc_best[key] = cc  # first (highest fusion score) chunk for this doc
+        elif doc_best[key]["page"] == 1 and cc["page"] > 1:
+            # Upgrade: we previously stored a cover-page hit; prefer this later page
+            doc_best[key] = cc
+
+    # Rebuild cleaned_chunks as the best-page-per-doc selection (preserving original rank order)
+    seen_docs_for_cit: set = set()
+    best_per_doc: list = []
+    for cc in all_retrieved_chunks:
+        key = cc["doc_name"].lower()
+        if key not in seen_docs_for_cit and doc_best.get(key) is cc:
+            best_per_doc.append(cc)
+            seen_docs_for_cit.add(key)
+    # Also keep the top-5 raw chunks for the transparent retrieval context
+    cleaned_chunks = all_retrieved_chunks[:5]
 
     # 2. Standardize citations output structure
+    # Search all_retrieved_chunks (up to 10) for the best page match per citation.
     citations_data = []
     seen_citations = set()
     for c in llm_result.citations:
         page = max(1, int(c.page))
-        # Match page numbers from parent cleaned chunks for consistency
-        for cc in cleaned_chunks:
-            if cc["doc_name"].lower() == c.document.lower() and cc["text"][:100] in cc["text"]:
-                page = cc["page"]
+        snippet = (c.snippet or "").strip()[:120]
+        best_chunk = None
+        best_score = -1
+        for cc in all_retrieved_chunks:
+            if cc["doc_name"].lower() != c.document.lower():
+                continue
+            # Priority 1: snippet appears in chunk text (highest confidence — exact location)
+            if snippet and snippet in cc["text"]:
+                best_chunk = cc
                 break
-                
+            # Priority 2: chunk page exactly matches LLM-cited page
+            if cc["page"] == page and best_score < 2:
+                best_chunk = cc
+                best_score = 2
+            # Priority 3: any chunk for the same document (fallback)
+            elif best_score < 1:
+                best_chunk = cc
+                best_score = 1
+        # Priority 4: if we only found a page-1 chunk, override with the best-page
+        # selection computed above (which prefers substantive non-cover pages)
+        if best_chunk is None or (best_chunk["page"] == 1 and best_score < 2):
+            doc_key = c.document.lower()
+            if doc_key in doc_best and doc_best[doc_key]["page"] > 1:
+                best_chunk = doc_best[doc_key]
+        if best_chunk is not None:
+            page = best_chunk["page"]
+            
+            # SPECIFICATION 7: Compare the retrieved chunk text with the text on the cited PDF page.
+            # If they do not match, log an error and reject the citation.
+            is_valid = validate_citation_page(
+                document_name=best_chunk["doc_name"],
+                category=best_chunk["c_obj"].category,
+                page_number=page,
+                chunk_text=best_chunk["text"],
+                settings=settings
+            )
+            if not is_valid:
+                logging.error(f"Citation validation failed for {best_chunk['doc_name']} Page {page}. Rejecting citation.")
+                continue
+        else:
+            logging.error(f"Citation validation failed: No matching retrieved chunk for document {c.document}. Rejecting citation.")
+            continue
+
         cit_key = (c.document.lower(), page)
         if cit_key in seen_citations:
             continue
         seen_citations.add(cit_key)
-        
+
         citations_data.append({
             "document": c.document,
             "page": page,

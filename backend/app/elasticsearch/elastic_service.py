@@ -98,13 +98,14 @@ class ElasticsearchService:
 
         chunks: List[DocumentChunk] = []
         for c in raw_chunks:
+            page_val = c.get("page_number") or c.get("page")
             chunks.append(
                 DocumentChunk(
                     chunk_id=c["chunk_id"],
                     document_id=c["document_id"],
                     document_name=c.get("document_name", ""),
                     category=c.get("category", ""),
-                    page_number=c.get("page_number", 0),
+                    page_number=int(page_val) if page_val is not None else 1,
                     chunk_index=c.get("chunk_index", 0),
                     text=c.get("chunk_text", c.get("text", "")),
                     char_count=c.get("char_count", 0),

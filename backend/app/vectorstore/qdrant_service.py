@@ -147,8 +147,9 @@ class QdrantService:
         for rank, res in enumerate(results, start=1):
             payload = res.payload or {}
             
-            # Safe extraction of page number (could be stored as page or page_number)
-            page_num = payload.get("page_number") or payload.get("page") or 1
+            page_num = payload.get("page_number") or payload.get("page") or payload.get("metadata", {}).get("page_number")
+            if page_num is None:
+                raise ValueError(f"page_number is missing in Qdrant payload for chunk {payload.get('chunk_id')}")
             chunk_idx = payload.get("chunk_index") or 0
 
             chunk = RetrievedChunk(

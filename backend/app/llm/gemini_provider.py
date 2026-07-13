@@ -97,43 +97,17 @@ class GeminiProvider(LLMProvider):
         if not citations:
             citations = [{"document": "IRS_Publication_504.pdf", "page": 1, "category": "Tax"}]
 
-        # 3. Dynamically synthesize the answer text in professional enterprise prose
-        query_lower = query.lower()
-        if "paul adams" in query_lower or "oconee" in query_lower or "easement" in query_lower:
-            answer = (
-                "The principal issue before the Court was determining the fair market value of the conservation easement "
-                "that Paul Adams granted to the Oconee River Land Trust in December 2017. The easement covered approximately "
-                "207 acres in Elberton, Georgia, and significantly restricted the future use and development of the property. "
-                "Evaluating competing expert valuations, the Court accepted the valuation proposed by the respondent's expert, "
-                "Mr. Sheppard, determining that the value of the easement was $612,000 (reflecting a pre-easement value of $985,000 "
-                "and a post-easement value of $373,000)."
-            )
-            summary = "The Court resolved the valuation of the conservation easement at $612,000 based on expert testimony."
-        elif "199a" in query_lower or "qbi" in query_lower or "qualified business income" in query_lower:
-            answer = (
-                "Section 199A of the Internal Revenue Code provides a tax deduction of up to 20% of Qualified Business Income (QBI) "
-                "for eligible sole proprietorships, partnerships, S corporations, and LLCs. The deduction is subject to limitation "
-                "thresholds based on taxable income and is phased out for Specified Service Trades or Businesses (SSTBs) once income "
-                "exceeds statutory limits."
-            )
-            summary = "Section 199A provides up to a 20% tax deduction on Qualified Business Income from pass-through entities."
-        elif "erisa" in query_lower or "notice" in query_lower or "retirement" in query_lower:
-            answer = (
-                "Under ERISA regulations, retirement plan administrators are required to provide participants with clear, "
-                "timely written notices explaining their rights and obligations under the plan. For automatic contribution arrangements "
-                "(such as QACA or EACA), plan notices must be provided within a reasonable period before each plan year begins."
-            )
-            summary = "ERISA mandates timely, comprehensive notices to plan participants regarding retirement options and rights."
-        else:
-            # General fallback: extract first sentences of retrieved chunks and merge into a single paragraph
-            combined_text = ""
-            for chunk in chunks[:2]:
-                txt = chunk["text"]
-                if txt:
-                    # Take the first sentence
-                    first_sent = re.split(r"(?<=[.!?])\s+", txt)[0].strip()
-                    if len(first_sent) > 20:
-                        combined_text += first_sent + " "
+        # 3. Dynamically synthesize the answer text from the retrieved chunks
+        # instead of hardcoding responses, which causes apparent hallucinations.
+        combined_text = ""
+        for chunk in chunks[:2]:
+            txt = chunk["text"]
+            if txt:
+                # Take the first sentence
+                first_sent = re.split(r"(?<=[.!?])\s+", txt)[0].strip()
+                if len(first_sent) > 20:
+                    combined_text += first_sent + " "
+
             
             if combined_text:
                 answer = combined_text.strip()

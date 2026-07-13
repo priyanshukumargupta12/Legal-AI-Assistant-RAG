@@ -54,26 +54,45 @@ class ResponseFormatter:
             # Process citations
             citations: List[Citation] = []
             raw_cits = data.get("citations", [])
+            
+            # Build a lookup: document_name -> best chunk (highest score first)
+            chunk_by_doc: Dict[str, Any] = {}
+            for chunk in retrieved_chunks:
+                chunk_doc = getattr(chunk, "document_name", getattr(chunk, "document", "")).lower()
+                if chunk_doc not in chunk_by_doc:
+                    chunk_by_doc[chunk_doc] = chunk  # already sorted by score descending
+
             for c in raw_cits:
                 if isinstance(c, dict) and "document" in c and "page" in c:
                     doc_name = c.get("document", "")
-                    page_num = int(c.get("page", 1))
+                    llm_page = int(c.get("page", 1))
+
+                    # Look up the real chunk for this document
+                    best_chunk = chunk_by_doc.get(doc_name.lower())
                     
-                    # Try to find a matching snippet from the retrieved chunks
-                    matched_snippet = None
-                    for chunk in retrieved_chunks:
-                        chunk_doc = getattr(chunk, "document_name", getattr(chunk, "document", ""))
-                        chunk_page = getattr(chunk, "page_number", getattr(chunk, "page", 1))
-                        if chunk_doc.lower() == doc_name.lower() and int(chunk_page) == page_num:
-                            matched_snippet = getattr(chunk, "text", getattr(chunk, "chunk_text", ""))
-                            break
-                            
+                    if best_chunk is not None:
+                        # Use the ACTUAL page number from the retrieved chunk, not what Gemini said
+                        real_page = getattr(best_chunk, "page_number", getattr(best_chunk, "page", llm_page))
+                        snippet = getattr(best_chunk, "text", getattr(best_chunk, "chunk_text", None))
+                        
+                        # Try exact page match first (in case multiple chunks from same doc)
+                        for chunk in retrieved_chunks:
+                            chunk_doc = getattr(chunk, "document_name", getattr(chunk, "document", ""))
+                            chunk_page = getattr(chunk, "page_number", getattr(chunk, "page", 1))
+                            if chunk_doc.lower() == doc_name.lower() and int(chunk_page) == llm_page:
+                                real_page = llm_page
+                                snippet = getattr(chunk, "text", getattr(chunk, "chunk_text", None))
+                                break
+                    else:
+                        real_page = llm_page
+                        snippet = None
+
                     citations.append(
                         Citation(
                             document=doc_name,
-                            page=page_num,
+                            page=real_page,
                             category=c.get("category", "Tax"),
-                            snippet=matched_snippet,
+                            snippet=snippet,
                         )
                     )
 

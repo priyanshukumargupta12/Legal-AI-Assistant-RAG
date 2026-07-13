@@ -1,9 +1,9 @@
 {
   "index_name": "legal_documents",
-  "Total Chunks": 152086,
-  "Indexed Chunks": 152086,
-  "Failed Chunks": 0,
-  "Total Duration (s)": 879.72,
-  "Average Chunk Time (ms)": 5.7844,
-  "Processed At": "2026-07-11T19:57:31.942689+00:00"
+  "Total Chunks": 99410,
+  "Indexed Chunks": 90641,
+  "Failed Chunks": 8769,
+  "Total Duration (s)": 3405.31,
+  "Average Chunk Time (ms)": 34.2552,
+  "Processed At": "2026-07-13T12:30:50.103291+00:00"
 }

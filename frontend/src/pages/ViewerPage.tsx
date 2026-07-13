@@ -71,7 +71,7 @@ const ViewerPage: React.FC = () => {
   }
 
   // Construct PDF URL from backend API (PDFs live on the Render server, not Vercel static files)
-  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "";
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
   const fileUrl = `${apiBase}/dataset/pdf?category=${encodeURIComponent(category)}&document=${encodeURIComponent(docName)}`;
 
   const formatBytes = (bytes: number): string => {

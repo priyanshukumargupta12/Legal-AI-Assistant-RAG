@@ -41,6 +41,7 @@ from app.retrieval.retrieval_service import HybridRetrievalService
 from app.llm.base_provider import LLMProvider
 from app.llm.gemini_provider import GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
+from app.llm.groq_provider import GroqProvider
 from app.llm.conversation_memory import ConversationHistoryMemory
 from app.llm.llm_repository import ConversationHistoryRepository
 from app.llm.llm_service import LLMService
@@ -196,6 +197,8 @@ def get_llm_provider(settings: SettingsDep) -> LLMProvider:
         return GeminiProvider(settings)
     elif provider_name == "openai":
         return OpenAIProvider(settings)
+    elif provider_name == "groq":
+        return GroqProvider(settings)
     else:
         raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 

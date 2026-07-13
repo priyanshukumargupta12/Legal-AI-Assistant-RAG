@@ -22,6 +22,7 @@ from app.core.exceptions import LLMError
 from app.llm.base_provider import LLMProvider
 from app.llm.gemini_provider import GeminiProvider
 from app.llm.openai_provider import OpenAIProvider
+from app.llm.groq_provider import GroqProvider
 from app.llm.conversation_memory import ConversationHistoryMemory
 from app.llm.llm_repository import ConversationHistoryRepository
 from app.llm.llm_schemas import LLMQueryRequest, LLMQueryResponse, CitationSchema
@@ -53,6 +54,8 @@ def get_llm_provider(settings: Settings) -> LLMProvider:
         return GeminiProvider(settings)
     elif provider_name == "openai":
         return OpenAIProvider(settings)
+    elif provider_name == "groq":
+        return GroqProvider(settings)
     else:
         raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
 
@@ -105,10 +108,16 @@ async def provider_health(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"LLM Provider API '{settings.llm_provider}' is unreachable.",
             )
+        model_name = settings.gemini_model
+        if settings.llm_provider == "openai":
+            model_name = settings.openai_model
+        elif settings.llm_provider == "groq":
+            model_name = settings.groq_model
+
         return {
             "status": "healthy",
             "provider": settings.llm_provider,
-            "model": settings.gemini_model if settings.llm_provider == "gemini" else settings.openai_model,
+            "model": model_name,
         }
     except Exception as exc:
         raise HTTPException(

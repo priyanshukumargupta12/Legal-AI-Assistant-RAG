@@ -121,6 +121,7 @@ const TopBar: React.FC = () => {
               >
                 <MenuItem value="gemini">Google Gemini 1.5 Pro</MenuItem>
                 <MenuItem value="openai" disabled>OpenAI GPT-4o (Config-disabled)</MenuItem>
+                <MenuItem value="groq">Groq Llama 3.3 70B</MenuItem>
               </Select>
             </FormControl>
           </Box>

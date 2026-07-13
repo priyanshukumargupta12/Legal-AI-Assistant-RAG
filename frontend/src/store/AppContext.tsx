@@ -52,6 +52,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const response = await axios.get(pingUrl, { timeout: 5000 });
         const status = response.data?.status;
         setSystemHealthy(status === 'healthy' || status === 'degraded');
+        if (response.data?.services?.llm_provider) {
+          setLlmProvider(response.data.services.llm_provider);
+        }
       } catch (err) {
         setSystemHealthy(false);
       }

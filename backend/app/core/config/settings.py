@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     app_debug: bool = Field(default=False, description="Enable debug/hot-reload mode")
 
     # ─── LLM Provider ─────────────────────────────────────────────────────────
-    llm_provider: Literal["gemini", "openai"] = Field(
+    llm_provider: Literal["gemini", "openai", "groq"] = Field(
         default="gemini",
         description="Active LLM provider",
     )
@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     openai_model: str = Field(
         default="gpt-4o-mini",
         description="OpenAI model identifier",
+    )
+    groq_api_key: str = Field(default="", description="Groq API key")
+    groq_model: str = Field(
+        default="llama-3.3-70b-versatile",
+        description="Groq model identifier",
     )
 
     # ─── Qdrant Vector Database ───────────────────────────────────────────────

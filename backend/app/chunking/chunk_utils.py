@@ -119,7 +119,7 @@ def build_text_splitter(
     )
 
 
-# ─── Chunk ID Generation ──────────────────────────────────────────────────────
+#  Chunk ID Generation 
 
 def generate_chunk_id(
     document_id: str,

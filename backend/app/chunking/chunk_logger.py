@@ -28,7 +28,5 @@ from __future__ import annotations
 
 from app.logging.logger import get_logger
 
-# ─── Module-level bound logger ────────────────────────────────────────────────
-# Logs all chunking activity (document start, page splits, stats, errors)
-# to the 'dataset' subsystem sink → logs/dataset/dataset.log.
+
 chunk_log = get_logger("dataset")
